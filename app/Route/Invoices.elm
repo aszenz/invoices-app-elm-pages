@@ -7,7 +7,7 @@ module Route.Invoices exposing (Model, Msg, RouteParams, route, Data, ActionData
 -}
 
 import BackendTask
-import Data.Invoices
+import Data.Invoice
 import Date
 import Effect
 import ErrorPage
@@ -113,7 +113,7 @@ view app shared model =
                     , Html.th [] [ Html.text "Item count" ]
                     ]
                 ]
-            , Data.Invoices.exampleInvoices
+            , Data.Invoice.exampleInvoices
                 |> List.map
                     (\invoice ->
                         Html.tr []

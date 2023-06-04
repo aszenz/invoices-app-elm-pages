@@ -1,6 +1,6 @@
-module Data.Invoices exposing (..)
+module Data.Invoice exposing (..)
 
-import Date exposing (Date)
+import Date 
 import Time
 
 
