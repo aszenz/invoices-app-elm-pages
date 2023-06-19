@@ -24,7 +24,6 @@ model InvoiceItems {
   product   String
   quantity  Float
   price     Float
-  content   String?
-  author    Invoice @relation(fields: [invoiceId], references: [id])
+  invoice    Invoice @relation(fields: [invoiceId], references: [id])
   invoiceId  Int
 }
