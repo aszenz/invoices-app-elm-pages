@@ -1,6 +1,11 @@
 module Data.Invoice exposing (..)
 
-import Date 
+import BackendTask
+import BackendTask.Custom
+import Date
+import FatalError
+import Json.Decode
+import Json.Encode
 import Time
 
 
@@ -62,3 +67,46 @@ exampleInvoices =
             ]
       }
     ]
+
+
+invoiceDecoder : Json.Decode.Decoder Invoice
+invoiceDecoder =
+    Json.Decode.map3
+        (\number company items ->
+            { number = number
+            , company = company
+            , items = items
+            , date = Date.fromCalendarDate 1 Time.Apr 2022
+            }
+        )
+        (Json.Decode.field "number" Json.Decode.string)
+        (Json.Decode.field "company" Json.Decode.string)
+        (Json.Decode.field "items"
+            (Json.Decode.list
+                (Json.Decode.map3
+                    (\price product qty ->
+                        { price = price
+                        , product = product
+                        , quantity = qty |> Basics.round
+                        }
+                    )
+                    (Json.Decode.field "price" Json.Decode.float)
+                    (Json.Decode.field "product" Json.Decode.string)
+                    (Json.Decode.field "quantity" Json.Decode.float)
+                )
+            )
+        )
+
+
+getInvoices : BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } (List Invoice)
+getInvoices =
+    BackendTask.Custom.run "getInvoices"
+        (Json.Encode.object [])
+        (Json.Decode.list invoiceDecoder)
+
+
+getInvoice : String -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } (Maybe Invoice)
+getInvoice invoiceNumber =
+    BackendTask.Custom.run "getInvoice"
+        (Json.Encode.object [ ( "invoiceNumber", invoiceNumber |> Json.Encode.string ) ])
+        (Json.Decode.nullable invoiceDecoder)

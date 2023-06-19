@@ -66,12 +66,17 @@ data routeParams request =
         _ =
             Debug.log "CALLED DATA" ""
     in
-    BackendTask.succeed
-        (Data.Invoice.exampleInvoices
-            |> List.Extra.find (\invoice -> invoice.number == routeParams.id)
-            |> Maybe.map Server.Response.render
-            |> Maybe.withDefault (Server.Response.errorPage ErrorPage.NotFound)
-        )
+    Data.Invoice.getInvoice routeParams.id
+        |> BackendTask.allowFatal
+        |> BackendTask.map
+            (\invoice ->
+                case invoice of
+                    Just inv ->
+                        Server.Response.render inv
+
+                    Nothing ->
+                        Server.Response.errorPage ErrorPage.NotFound
+            )
 
 
 action :

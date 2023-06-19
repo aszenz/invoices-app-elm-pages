@@ -51,9 +51,17 @@ in
     name = "elmLearn";
     buildInputs = [
       lamdera
+      pkgs.nodejs_20
+      pkgs.openssl
     ];
     shellHook = ''
       echo "elm pages starter"
+      PATH="$PWD/node_modules/.bin:$PATH"
     '';
+    PRISMA_MIGRATION_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/migration-engine";
+    PRISMA_QUERY_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/query-engine";
+    PRISMA_QUERY_ENGINE_LIBRARY = "${pkgs.prisma-engines}/lib/libquery_engine.node";
+    PRISMA_INTROSPECTION_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/introspection-engine";
+    PRISMA_FMT_BINARY = "${pkgs.prisma-engines}/bin/prisma-fmt";
   };
 }

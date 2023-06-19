@@ -51,7 +51,7 @@ init :
     RouteBuilder.App Data ActionData RouteParams
     -> Shared.Model
     -> ( Model, Effect.Effect Msg )
-init app shared =
+init _ _ =
     ( {}, Effect.none )
 
 
@@ -61,19 +61,19 @@ update :
     -> Msg
     -> Model
     -> ( Model, Effect.Effect Msg )
-update app shared msg model =
+update _ _ msg model =
     case msg of
         NoOp ->
             ( model, Effect.none )
 
 
 subscriptions : RouteParams -> UrlPath.UrlPath -> Shared.Model -> Model -> Sub Msg
-subscriptions routeParams path shared model =
+subscriptions _ _ _ _ =
     Sub.none
 
 
 type alias Data =
-    {}
+    { invoices : List Data.Invoice.Invoice }
 
 
 type alias ActionData =
@@ -84,12 +84,19 @@ data :
     RouteParams
     -> Server.Request.Request
     -> BackendTask.BackendTask FatalError.FatalError (Server.Response.Response Data ErrorPage.ErrorPage)
-data routeParams request =
-    BackendTask.succeed (Server.Response.render {})
+data _ _ =
+    Data.Invoice.getInvoices
+        |> BackendTask.allowFatal
+        |> BackendTask.map
+            (\invoices ->
+                Server.Response.render
+                    { invoices = invoices
+                    }
+            )
 
 
 head : RouteBuilder.App Data ActionData RouteParams -> List Head.Tag
-head app =
+head _ =
     []
 
 
@@ -98,7 +105,7 @@ view :
     -> Shared.Model
     -> Model
     -> View.View (PagesMsg.PagesMsg Msg)
-view app shared model =
+view app _ _ =
     { title = "Invoices"
     , body =
         [ Html.h2 []
@@ -113,7 +120,7 @@ view app shared model =
                     , Html.th [] [ Html.text "Item count" ]
                     ]
                 ]
-            , Data.Invoice.exampleInvoices
+            , app.data.invoices
                 |> List.map
                     (\invoice ->
                         Html.tr []
@@ -138,5 +145,5 @@ action :
     RouteParams
     -> Server.Request.Request
     -> BackendTask.BackendTask FatalError.FatalError (Server.Response.Response ActionData ErrorPage.ErrorPage)
-action routeParams request =
+action _ _ =
     BackendTask.succeed (Server.Response.render {})
