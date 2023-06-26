@@ -1,26 +1,26 @@
-module Route.Invoices exposing (Model, Msg, RouteParams, route, Data, ActionData)
-
-{-|
-
-@docs Model, Msg, RouteParams, route, Data, ActionData
-
--}
+module Route.Invoices exposing
+    ( ActionData
+    , Data
+    , Model
+    , Msg
+    , RouteParams
+    , route
+    )
 
 import BackendTask
 import Data.Invoice
 import Date
-import Effect
 import ErrorPage
 import FatalError
 import Head
 import Html
+import Html.Attributes
 import PagesMsg
 import Route
 import RouteBuilder
 import Server.Request
 import Server.Response
 import Shared
-import UrlPath
 import View
 
 
@@ -28,48 +28,12 @@ type alias Model =
     {}
 
 
-type Msg
-    = NoOp
+type alias Msg =
+    ()
 
 
 type alias RouteParams =
     {}
-
-
-route : RouteBuilder.StatefulRoute RouteParams Data ActionData Model Msg
-route =
-    RouteBuilder.serverRender { data = data, action = action, head = head }
-        |> RouteBuilder.buildWithLocalState
-            { view = view
-            , init = init
-            , update = update
-            , subscriptions = subscriptions
-            }
-
-
-init :
-    RouteBuilder.App Data ActionData RouteParams
-    -> Shared.Model
-    -> ( Model, Effect.Effect Msg )
-init _ _ =
-    ( {}, Effect.none )
-
-
-update :
-    RouteBuilder.App Data ActionData RouteParams
-    -> Shared.Model
-    -> Msg
-    -> Model
-    -> ( Model, Effect.Effect Msg )
-update _ _ msg model =
-    case msg of
-        NoOp ->
-            ( model, Effect.none )
-
-
-subscriptions : RouteParams -> UrlPath.UrlPath -> Shared.Model -> Model -> Sub Msg
-subscriptions _ _ _ _ =
-    Sub.none
 
 
 type alias Data =
@@ -77,15 +41,27 @@ type alias Data =
 
 
 type alias ActionData =
-    {}
+    Never
+
+
+route : RouteBuilder.StatelessRoute RouteParams Data ActionData
+route =
+    RouteBuilder.serverRender
+        { data = data
+        , head = head
+        , action = action
+        }
+        |> RouteBuilder.buildNoState
+            { view = view
+            }
 
 
 data :
     RouteParams
     -> Server.Request.Request
     -> BackendTask.BackendTask FatalError.FatalError (Server.Response.Response Data ErrorPage.ErrorPage)
-data _ _ =
-    Data.Invoice.getInvoices
+data _ request =
+    Data.Invoice.getInvoices (Server.Request.queryParams request)
         |> BackendTask.allowFatal
         |> BackendTask.map
             (\invoices ->
@@ -100,24 +76,75 @@ head _ =
     []
 
 
+action :
+    RouteParams
+    -> Server.Request.Request
+    -> BackendTask.BackendTask FatalError.FatalError (Server.Response.Response ActionData ErrorPage.ErrorPage)
+action _ _ =
+    BackendTask.succeed
+        (Server.Response.plainText "Not supported")
+
+
 view :
     RouteBuilder.App Data ActionData RouteParams
     -> Shared.Model
-    -> Model
-    -> View.View (PagesMsg.PagesMsg Msg)
-view app _ _ =
+    -> View.View (PagesMsg.PagesMsg ())
+view app _ =
     { title = "Invoices"
     , body =
         [ Html.h2 []
             [ Html.text "Invoices"
             ]
+        , Html.form [ Html.Attributes.method "GET", Html.Attributes.id "search-invoices-form" ]
+            [ Html.button [ Html.Attributes.type_ "submit" ] [ Html.text "Search" ]
+            ]
         , Html.table []
             [ Html.thead []
                 [ Html.tr []
-                    [ Html.th [] [ Html.text "Number" ]
-                    , Html.th [] [ Html.text "Company" ]
-                    , Html.th [] [ Html.text "Date" ]
-                    , Html.th [] [ Html.text "Item count" ]
+                    [ Html.th []
+                        [ Html.div []
+                            [ Html.text "Number"
+                            , Html.input
+                                [ Html.Attributes.name "number"
+                                , Html.Attributes.type_ "text"
+                                , Html.Attributes.form "search-invoices-form"
+                                ]
+                                []
+                            ]
+                        ]
+                    , Html.th []
+                        [ Html.div []
+                            [ Html.text "Company"
+                            , Html.input
+                                [ Html.Attributes.name "company"
+                                , Html.Attributes.type_ "text"
+                                , Html.Attributes.form "search-invoices-form"
+                                ]
+                                []
+                            ]
+                        ]
+                    , Html.th []
+                        [ Html.div []
+                            [ Html.text "Date"
+                            , Html.input
+                                [ Html.Attributes.name "date"
+                                , Html.Attributes.type_ "text"
+                                , Html.Attributes.form "search-invoices-form"
+                                ]
+                                []
+                            ]
+                        ]
+                    , Html.th []
+                        [ Html.div []
+                            [ Html.text "Item count"
+                            , Html.input
+                                [ Html.Attributes.name "item_count"
+                                , Html.Attributes.type_ "text"
+                                , Html.Attributes.form "search-invoices-form"
+                                ]
+                                []
+                            ]
+                        ]
                     ]
                 ]
             , app.data.invoices
@@ -139,11 +166,3 @@ view app _ _ =
             ]
         ]
     }
-
-
-action :
-    RouteParams
-    -> Server.Request.Request
-    -> BackendTask.BackendTask FatalError.FatalError (Server.Response.Response ActionData ErrorPage.ErrorPage)
-action _ _ =
-    BackendTask.succeed (Server.Response.render {})

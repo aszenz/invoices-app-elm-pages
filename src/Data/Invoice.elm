@@ -3,9 +3,11 @@ module Data.Invoice exposing (..)
 import BackendTask
 import BackendTask.Custom
 import Date
+import Dict
 import FatalError
 import Json.Decode
 import Json.Encode
+import Search.Search
 import Time
 
 
@@ -98,10 +100,20 @@ invoiceDecoder =
         )
 
 
-getInvoices : BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } (List Invoice)
-getInvoices =
+getInvoices :
+    Dict.Dict String (List String)
+    -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } (List Invoice)
+getInvoices filters =
+    let
+        _ =
+            Debug.log "filters" filters
+    in
     BackendTask.Custom.run "getInvoices"
-        (Json.Encode.object [])
+        (filters
+            |> Search.Query.fromQueryParams
+                (\key -> Just key)
+            |> Search.Query.encodeToJs
+        )
         (Json.Decode.list invoiceDecoder)
 
 

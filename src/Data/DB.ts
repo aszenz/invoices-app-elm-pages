@@ -14,7 +14,7 @@ class Database {
   getRepository<T extends keyof Repositories>(repository: T): Repositories[T] {
     switch (repository) {
       case "invoiceRepository": {
-        return new InvoiceRepository(prisma);
+        return new InvoiceRepository(this.#prisma);
       }
       default:
         throw new Error("Never");
@@ -28,13 +28,13 @@ class InvoiceRepository {
     this.#prisma = prisma;
   }
   async getInvoices() {
-    const invoices = await prisma.invoice.findMany({
+    const invoices = await this.#prisma.invoice.findMany({
       include: { items: true },
     });
     return invoices;
   }
   async getInvoice(invoiceNumber: string) {
-    const invoice = await prisma.invoice.findUnique({
+    const invoice = await this.#prisma.invoice.findUnique({
       where: { number: invoiceNumber },
       include: { items: true },
     });
@@ -42,18 +42,6 @@ class InvoiceRepository {
   }
 }
 
-const prisma = new PrismaClient();
-
-function getDB() {
+function getDB(prisma: PrismaClient) {
   return new Database(prisma);
 }
-
-// getDB()
-//   .then(async () => {
-//     await prisma.$disconnect();
-//   })
-//   .catch(async (e) => {
-//     console.error(e);
-//     await prisma.$disconnect();
-//     throw e;
-//   });
