@@ -7,7 +7,7 @@ import Dict
 import FatalError
 import Json.Decode
 import Json.Encode
-import Search.Search
+import Search.Query
 import Time
 
 
@@ -112,7 +112,7 @@ getInvoices filters =
         (filters
             |> Search.Query.fromQueryParams
                 (\key -> Just key)
-            |> Search.Query.encodeToJs
+            |> Search.Query.encodeToJSValue Basics.identity
         )
         (Json.Decode.list invoiceDecoder)
 

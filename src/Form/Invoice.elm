@@ -14,17 +14,17 @@ invoiceForm =
     (\company date ->
         { combine =
             Form.Validation.succeed
-                (\companyValue dateValue g ->
+                (\companyValue dateV ->
                     { number = ""
                     , company = companyValue
-                    , date = dateValue
+                    , date = dateV
                     , items = []
                     }
                 )
-                |> Form.Validation.andMap
-                    company
+                |> Form.Validation.andMap company
                 |> Form.Validation.andMap date
-                |> Form.Validation.andMap Form.Validation.global
+
+        -- |> Form.Validation.andMap Form.Validation.global
         , view =
             \formState ->
                 [ Html.nav []
@@ -36,7 +36,8 @@ invoiceForm =
                       else
                         Html.button [] [ Html.text "Save" ]
                     ]
-                , Form.Utils.FormGroup.errorsView formState Form.Validation.global
+
+                -- , Form.Utils.FormGroup.errorsView formState Form.Validation.global
                 , Html.fieldset []
                     [ Html.legend [] [ Html.text "Invoice" ]
                     , Form.Utils.FormGroup.fieldView "Company" company formState

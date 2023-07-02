@@ -27,7 +27,7 @@ class InvoiceRepository {
   constructor(prisma: PrismaClient) {
     this.#prisma = prisma;
   }
-  async getInvoices() {
+  async getInvoices(filter: Record<string, string>) {
     const invoices = await this.#prisma.invoice.findMany({
       include: { items: true },
     });

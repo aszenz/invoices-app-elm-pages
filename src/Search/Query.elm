@@ -3,6 +3,7 @@ module Search.Query exposing
     , SortOrder(..)
     , encodeToJSValue
     , fromQueryParams
+    , toQueryParams
     )
 
 import Dict
@@ -12,11 +13,7 @@ import List.Extra
 
 type alias SearchConditions fieldType =
     { filters : List ( fieldType, String )
-    , sortBy :
-        Maybe
-            { field : fieldType
-            , order : SortOrder
-            }
+    , sortBy : List ( fieldType, SortOrder )
     , pageNo : Int
     }
 
@@ -52,22 +49,22 @@ fromQueryParams toFieldName queryParams =
                 )
     , sortBy =
         queryParams
-            |> Dict.get "_sort-by"
-            |> Maybe.andThen
-                (\field ->
+            |> Dict.filter (\k _ -> k == "_sort-by")
+            |> Dict.toList
+            |> List.filterMap
+                (\( _, field ) ->
                     List.Extra.last field
                         |> Maybe.andThen
                             (\fieldKey ->
                                 toFieldName fieldKey
                                     |> Maybe.map
                                         (\valF ->
-                                            { field = valF
-                                            , order =
-                                                queryParams
-                                                    |> Dict.get "_sort-order"
-                                                    |> Maybe.map fromSortOrder
-                                                    |> Maybe.withDefault Ascending
-                                            }
+                                            ( valF
+                                            , queryParams
+                                                |> Dict.get "_sort-order"
+                                                |> Maybe.map fromSortOrderList
+                                                |> Maybe.withDefault Ascending
+                                            )
                                         )
                             )
                 )
@@ -80,13 +77,45 @@ fromQueryParams toFieldName queryParams =
     }
 
 
-encodeToJSValue : SearchConditions fieldType -> (fieldType -> String) -> Json.Encode.Value
-encodeToJSValue searchConditions fieldTypeToString =
-    Debug.todo ""
+toQueryParams : (fieldType -> String) -> SearchConditions fieldType -> Dict.Dict String (List String)
+toQueryParams fieldTypeToString searchConditions =
+    let
+        filters =
+            searchConditions.filters
+                |> List.map (\( field, searchValue ) -> ( field |> fieldTypeToString, searchValue ))
+
+        sortBy =
+            case List.head searchConditions.sortBy of
+                Just ( sortField, sortOrder ) ->
+                    [ ( "_sort-by", sortField |> fieldTypeToString )
+                    , ( "_sort-order", toSortOrder sortOrder )
+                    ]
+
+                Nothing ->
+                    []
+
+        pageNo =
+            [ ( "_page", searchConditions.pageNo |> String.fromInt ) ]
+    in
+    [ filters
+    , sortBy
+    , pageNo
+    ]
+        |> List.concat
+        |> Dict.fromList
+        |> Dict.map (\_ v -> List.singleton v)
 
 
-fromSortOrder : List String -> SortOrder
-fromSortOrder str =
+encodeToJSValue : (fieldType -> String) -> SearchConditions fieldType -> Json.Encode.Value
+encodeToJSValue fieldTypeToString searchConditions =
+    toQueryParams fieldTypeToString searchConditions
+        |> Json.Encode.dict
+            Basics.identity
+            (Json.Encode.list Json.Encode.string)
+
+
+fromSortOrderList : List String -> SortOrder
+fromSortOrderList str =
     case List.Extra.last str of
         Just "asc" ->
             Ascending
@@ -96,3 +125,26 @@ fromSortOrder str =
 
         _ ->
             Ascending
+
+
+toSortOrder : SortOrder -> String
+toSortOrder order_ =
+    case order_ of
+        Ascending ->
+            "asc"
+
+        Descending ->
+            "desc"
+
+
+fromSortOrder : String -> Maybe SortOrder
+fromSortOrder order_ =
+    case order_ of
+        "asc" ->
+            Just Ascending
+
+        "desc" ->
+            Just Descending
+
+        _ ->
+            Nothing
