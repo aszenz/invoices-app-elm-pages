@@ -1,5 +1,6 @@
-module Form.Invoice exposing (..)
+module Form.Invoice exposing (invoiceForm)
 
+import BackendTask
 import Data.Invoice
 import Form
 import Form.Field
@@ -7,24 +8,39 @@ import Form.Utils.FormGroup
 import Form.Validation
 import Html
 import Html.Attributes
+import Pages.Form
 
 
-invoiceForm : Form.HtmlForm String Data.Invoice.Invoice (Maybe Data.Invoice.Invoice) msg
+invoiceForm :
+    Pages.Form.FormWithServerValidations
+        String
+        Data.Invoice.Invoice
+        (Maybe Data.Invoice.Invoice)
+        (List (Html.Html msg))
 invoiceForm =
-    (\company date ->
+    (\number company date ->
         { combine =
             Form.Validation.succeed
-                (\companyValue dateV ->
-                    { number = ""
-                    , company = companyValue
-                    , date = dateV
-                    , items = []
-                    }
+                (\numberValue companyValue dateValue ->
+                    Data.Invoice.invoiceNoExists numberValue
+                        |> BackendTask.allowFatal
+                        |> BackendTask.map
+                            (\exists ->
+                                if exists then
+                                    Form.Validation.fail "Invoice no already exists" number
+
+                                else
+                                    Form.Validation.succeed
+                                        { number = numberValue
+                                        , company = companyValue
+                                        , date = dateValue
+                                        , items = []
+                                        }
+                            )
                 )
+                |> Form.Validation.andMap number
                 |> Form.Validation.andMap company
                 |> Form.Validation.andMap date
-
-        -- |> Form.Validation.andMap Form.Validation.global
         , view =
             \formState ->
                 [ Html.nav []
@@ -36,17 +52,33 @@ invoiceForm =
                       else
                         Html.button [] [ Html.text "Save" ]
                     ]
-
-                -- , Form.Utils.FormGroup.errorsView formState Form.Validation.global
+                , Form.Utils.FormGroup.errorsView formState Form.Validation.global
                 , Html.fieldset []
                     [ Html.legend [] [ Html.text "Invoice" ]
-                    , Form.Utils.FormGroup.fieldView "Company" company formState
-                    , Form.Utils.FormGroup.fieldView "Date" date formState
+                    , Form.Utils.FormGroup.fieldView "Number"
+                        number
+                        [ Html.Attributes.readonly
+                            (case formState.input of
+                                Just _ ->
+                                    True
+
+                                Nothing ->
+                                    False
+                            )
+                        ]
+                        formState
+                    , Form.Utils.FormGroup.fieldView "Company" company [] formState
+                    , Form.Utils.FormGroup.fieldView "Date" date [] formState
                     ]
                 ]
         }
     )
         |> Form.form
+        |> Form.field "number"
+            (Form.Field.text
+                |> Form.Field.required "Required"
+                |> Form.Field.withOptionalInitialValue (Maybe.map .number)
+            )
         |> Form.field "company"
             (Form.Field.text
                 |> Form.Field.required "Required"

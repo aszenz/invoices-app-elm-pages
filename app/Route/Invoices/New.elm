@@ -1,16 +1,20 @@
-module Route.Invoices.New exposing (ActionData, Data, Model, Msg, RouteParams, route)
+module Route.Invoices.New exposing (Model, Msg, RouteParams, route, Data, ActionData)
 
-{-| 
+{-|
+
 @docs Model, Msg, RouteParams, route, Data, ActionData
--}
 
+-}
 
 import BackendTask
 import Effect
 import ErrorPage
 import FatalError
+import Form
+import Form.Invoice
 import Head
 import Html
+import Pages.Form
 import PagesMsg
 import RouteBuilder
 import Server.Request
@@ -63,8 +67,7 @@ update app shared msg model =
             ( model, Effect.none )
 
 
-subscriptions :
-    RouteParams -> UrlPath.UrlPath -> Shared.Model -> Model -> Sub Msg
+subscriptions : RouteParams -> UrlPath.UrlPath -> Shared.Model -> Model -> Sub Msg
 subscriptions routeParams path shared model =
     Sub.none
 
@@ -96,7 +99,19 @@ view :
     -> Model
     -> View.View (PagesMsg.PagesMsg Msg)
 view app shared model =
-    { title = "Invoices.New", body = [ Html.h2 [] [ Html.text "New Invoice" ] ] }
+    { title = "Invoices.New"
+    , body =
+        [ Html.h2 [] [ Html.text "New Invoice" ]
+        , Pages.Form.renderHtml
+            []
+            (Form.options
+                "invoice"
+                |> Form.withInput Nothing
+            )
+            app
+            Form.Invoice.invoiceForm
+        ]
+    }
 
 
 action :
