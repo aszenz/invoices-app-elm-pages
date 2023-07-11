@@ -79,12 +79,24 @@ getInvoice invoiceNumber =
         (Json.Decode.nullable invoiceDecoder)
 
 
+createInvoice : Invoice -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } Invoice
+createInvoice invoice =
+    BackendTask.Custom.run "createInvoice"
+        (Json.Encode.object
+            [ ( "number", invoice.number |> Json.Encode.string )
+            , ( "company", invoice.company |> Json.Encode.string )
+            , ( "date", invoice.date |> Date.toIsoString |> Json.Encode.string )
+            , ( "items", Json.Encode.object [] )
+            ]
+        )
+        invoiceDecoder
 
--- createInvoice : Invoice -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } (Maybe Invoice)
--- createInvoice invoice =
---     BackendTask.Custom.run "createInvoice"
---         (Json.Encode.object [ ( "invoiceNumber", invoiceNumber |> Json.Encode.string ) ])
---         (Json.Decode.nullable invoiceDecoder)
+
+deleteInvoice : String -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } ()
+deleteInvoice number =
+    BackendTask.Custom.run "deleteInvoice"
+        (Json.Encode.object [ ( "invoiceNumber", number |> Json.Encode.string ) ])
+        (Json.Decode.succeed ())
 
 
 updateInvoice : Invoice -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } Invoice

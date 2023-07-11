@@ -15,12 +15,14 @@ import FatalError
 import Form
 import Form.Handler
 import Form.Invoice
-import Form.Utils.FormGroup
 import Form.Validation
 import Head
 import Html
+import Html.Attributes
 import Pages.Form
+import Pages.Navigation
 import PagesMsg
+import Route
 import RouteBuilder
 import Server.Request
 import Server.Response
@@ -48,8 +50,13 @@ type alias Data =
     Data.Invoice.Invoice
 
 
+type Action
+    = SaveInvoice (BackendTask.BackendTask FatalError.FatalError (Form.Validation.Validation String Data.Invoice.Invoice Never Never))
+    | DeleteInvoice ()
+
+
 type alias ActionData =
-    { serverResponse : Form.ServerResponse String
+    { serverFormResponse : Form.ServerResponse String
     }
 
 
@@ -78,29 +85,45 @@ data routeParams _ =
 action :
     RouteParams
     -> Server.Request.Request
-    -> BackendTask.BackendTask FatalError.FatalError (Server.Response.Response ActionData ErrorPage.ErrorPage)
+    -> BackendTask.BackendTask FatalError.FatalError (Server.Response.Response ActionData error)
 action routeParams request =
     case Server.Request.method request of
         Server.Request.Post ->
-            case request |> Server.Request.formDataWithServerValidation formHandlers of
-                Just bk ->
-                    bk
-                        |> BackendTask.andThen
-                            (\result ->
-                                case result of
-                                    Ok ( formResponse, parsedForm ) ->
-                                        Data.Invoice.updateInvoice { parsedForm | number = routeParams.id }
-                                            |> BackendTask.allowFatal
-                                            |> BackendTask.map
-                                                (\_ -> Server.Response.render { serverResponse = formResponse })
+            routeParams.id
+                |> Data.Invoice.getInvoice
+                |> BackendTask.allowFatal
+                |> BackendTask.andThen
+                    (\originalInvoice ->
+                        case Server.Request.formData (formHandlers originalInvoice) request of
+                            Just ( serverResponse, Form.Valid (SaveInvoice backendTask) ) ->
+                                backendTask
+                                    |> BackendTask.andThen
+                                        (\output ->
+                                            case Form.Validation.value output of
+                                                Just inv ->
+                                                    Data.Invoice.updateInvoice { inv | number = routeParams.id }
+                                                        |> BackendTask.allowFatal
+                                                        |> BackendTask.map
+                                                            (\_ -> Route.redirectTo (Route.Invoices__Id_ { id = routeParams.id }))
 
-                                    Err formResponse ->
-                                        BackendTask.succeed
-                                            (Server.Response.render { serverResponse = formResponse })
-                            )
+                                                Nothing ->
+                                                    BackendTask.succeed
+                                                        (Server.Response.render { serverFormResponse = serverResponse })
+                                        )
 
-                Nothing ->
-                    BackendTask.fail (FatalError.fromString "Missing form data")
+                            Just ( _, Form.Valid (DeleteInvoice _) ) ->
+                                Data.Invoice.deleteInvoice routeParams.id
+                                    |> BackendTask.allowFatal
+                                    |> BackendTask.map
+                                        (\_ -> Route.redirectTo Route.Invoices)
+
+                            Just ( serverResponse, Form.Invalid _ _ ) ->
+                                BackendTask.succeed
+                                    (Server.Response.render { serverFormResponse = serverResponse })
+
+                            Nothing ->
+                                BackendTask.fail (FatalError.fromString "Missing form data")
+                    )
 
         _ ->
             Server.Response.plainText "Method  not supported"
@@ -125,50 +148,59 @@ view app _ =
         [ Html.h2 []
             [ Html.text ("Invoice " ++ app.data.number)
             ]
+        , Html.nav []
+            [ case app.navigation of
+                Just (Pages.Navigation.Submitting _) ->
+                    Html.button
+                        [ Html.Attributes.disabled True ]
+                        [ Html.text "Saving invoice..." ]
+
+                _ ->
+                    Html.button [ Html.Attributes.type_ "submit", Html.Attributes.form "invoice" ] [ Html.text "Save" ]
+            , if
+                app.pageFormState
+                    |> Dict.get "deleteInvoice"
+                    |> Maybe.map .submitAttempted
+                    |> Maybe.withDefault False
+              then
+                Html.button
+                    [ Html.Attributes.disabled True ]
+                    [ Html.text "Deleting invoice..." ]
+
+              else
+                Html.button [ Html.Attributes.type_ "submit", Html.Attributes.form "deleteInvoice" ] [ Html.text "Delete" ]
+            ]
         , case app.action of
             Nothing ->
-                Pages.Form.renderHtml
-                    []
-                    (Form.options
-                        "invoice"
-                        |> Form.withInput (Just app.data)
-                    )
-                    app
-                    Form.Invoice.invoiceForm
+                Html.div []
+                    [ app.data
+                        |> Just
+                        |> Form.Invoice.invoiceForm
+                        |> Pages.Form.renderHtml [] (Form.options "invoice") app
+                    , Form.Invoice.deleteInvoiceForm
+                        |> Pages.Form.renderHtml [] (Form.options "deleteInvoice") app
+                    ]
 
-            Just { serverResponse } ->
+            Just { serverFormResponse } ->
                 Html.div []
                     [ Html.span []
-                        [ if Form.Utils.FormGroup.hasFormError serverResponse then
-                            Html.text "Failed to save"
-
-                          else
-                            Html.text "Changes saved"
+                        [ Html.text "Failed to save"
                         ]
-                    , Pages.Form.renderHtml
-                        []
-                        (Form.options
-                            "invoice"
-                            |> Form.withInput (Just app.data)
-                            |> Form.withServerResponse (Just serverResponse)
-                        )
-                        app
-                        Form.Invoice.invoiceForm
+                    , Form.Invoice.invoiceForm Nothing
+                        |> Pages.Form.renderHtml []
+                            (Form.options "invoice" |> Form.withServerResponse (Just serverFormResponse))
+                            app
+                    , Form.Invoice.deleteInvoiceForm
+                        |> Pages.Form.renderHtml [] (Form.options "deleteInvoice") app
                     ]
         ]
     }
 
 
-
--- formHandlers : Form.Handler.Handler String Action
-
-
-formHandlers :
-    Form.Handler.Handler
-        String
-        (BackendTask.BackendTask FatalError.FatalError (Form.Validation.Validation String Data.Invoice.Invoice Never Never))
-formHandlers =
-    Form.Handler.init Basics.identity Form.Invoice.invoiceForm
+formHandlers : Maybe Data.Invoice.Invoice -> Form.Handler.Handler String Action
+formHandlers initialFormValue =
+    Form.Handler.init SaveInvoice (Form.Invoice.invoiceForm initialFormValue)
+        |> Form.Handler.with DeleteInvoice Form.Invoice.deleteInvoiceForm
 
 
 head : RouteBuilder.App Data ActionData RouteParams -> List Head.Tag

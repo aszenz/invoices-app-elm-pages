@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 export {
   getInvoices,
@@ -6,6 +6,7 @@ export {
   updateInvoice,
   invoiceNoExists,
   createInvoice,
+  deleteInvoice,
 };
 
 const prisma = new PrismaClient();
@@ -30,7 +31,11 @@ async function updateInvoice({
   newData,
 }: {
   invoiceNumber: string;
-  newData: { company: string; date: string };
+  newData: {
+    company: string;
+    date: string;
+    items?: Prisma.InvoiceItemsUpdateManyWithoutInvoiceNestedInput;
+  };
 }) {
   const invoice = await prisma.invoice.update({
     where: {
@@ -39,6 +44,7 @@ async function updateInvoice({
     data: {
       company: newData.company + " ss",
       date: new Date(newData.date),
+      items: newData.items,
     },
     include: {
       items: true,
@@ -51,18 +57,28 @@ async function createInvoice(data: {
   number: string;
   company: string;
   date: string;
+  items: Prisma.InvoiceItemsCreateNestedManyWithoutInvoiceInput;
 }) {
   const invoice = await prisma.invoice.create({
     data: {
       number: data.number,
       company: data.company,
-      date: data.date,
+      date: new Date(data.date),
+      items: data.items,
     },
     include: {
       items: true,
     },
   });
   return invoice;
+}
+
+async function deleteInvoice({ invoiceNumber }: { invoiceNumber: string }) {
+  const _ = await prisma.invoice.delete({
+    where: {
+      number: invoiceNumber,
+    },
+  });
 }
 
 async function invoiceNoExists({ invoiceNumber }: { invoiceNumber: string }) {
