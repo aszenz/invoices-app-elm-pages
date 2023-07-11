@@ -18,20 +18,21 @@ async function getInvoices(search: any) {
   return invoices;
 }
 
-async function getInvoice({ invoiceNumber }: { invoiceNumber: string }) {
+async function getInvoice({ id }: { id: string }) {
   const invoice = await prisma.invoice.findUnique({
-    where: { number: invoiceNumber },
+    where: { id: Number(id) },
     include: { items: true },
   });
   return invoice;
 }
 
 async function updateInvoice({
-  invoiceNumber,
+  id,
   newData,
 }: {
-  invoiceNumber: string;
+  id: string;
   newData: {
+    number: string;
     company: string;
     date: string;
     items?: Prisma.InvoiceItemsUpdateManyWithoutInvoiceNestedInput;
@@ -39,9 +40,10 @@ async function updateInvoice({
 }) {
   const invoice = await prisma.invoice.update({
     where: {
-      number: invoiceNumber,
+      id: Number(id),
     },
     data: {
+      number: newData.number,
       company: newData.company + " ss",
       date: new Date(newData.date),
       items: newData.items,
@@ -73,10 +75,11 @@ async function createInvoice(data: {
   return invoice;
 }
 
-async function deleteInvoice({ invoiceNumber }: { invoiceNumber: string }) {
+async function deleteInvoice({ id }: { id: string }) {
+  console.log('invoice', id)
   const _ = await prisma.invoice.delete({
     where: {
-      number: invoiceNumber,
+      id: Number(id),
     },
   });
 }

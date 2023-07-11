@@ -69,7 +69,7 @@ action _ request =
                                             |> BackendTask.allowFatal
                                             |> BackendTask.map
                                                 (\invoice ->
-                                                    Route.redirectTo (Route.Invoices__Id_ { id = invoice.number })
+                                                    Route.redirectTo (Route.Invoices__Id_ { id = invoice.id })
                                                 )
 
                                     Err formErrorResponse ->
@@ -89,7 +89,7 @@ action _ request =
 formHandlers :
     Form.Handler.Handler
         String
-        (BackendTask.BackendTask FatalError.FatalError (Form.Validation.Validation String Data.Invoice.Invoice Never Never))
+        (BackendTask.BackendTask FatalError.FatalError (Form.Validation.Validation String Data.Invoice.NewInvoice Never Never))
 formHandlers =
     Form.Invoice.invoiceForm Nothing
         |> Form.Handler.init Basics.identity

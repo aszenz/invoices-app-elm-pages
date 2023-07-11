@@ -37,7 +37,7 @@ type alias RouteParams =
 
 
 type alias Data =
-    { invoices : List Data.Invoice.Invoice }
+    { invoices : List Data.Invoice.ExistingInvoice }
 
 
 type alias ActionData =
@@ -152,7 +152,7 @@ view app _ =
                     (\invoice ->
                         Html.tr []
                             [ Html.td []
-                                [ Route.Invoices__Id_ { id = invoice.number }
+                                [ Route.Invoices__Id_ { id = invoice.id }
                                     |> Route.link []
                                         [ Html.text invoice.number
                                         ]

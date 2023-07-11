@@ -11,11 +11,11 @@ import Pages.Form
 
 
 invoiceForm :
-    Maybe Data.Invoice.Invoice
+    Maybe Data.Invoice.ExistingInvoice
     ->
         Pages.Form.FormWithServerValidations
             String
-            Data.Invoice.Invoice
+            Data.Invoice.NewInvoice
             ()
             (List (Html.Html msg))
 invoiceForm initialValue =
@@ -121,6 +121,7 @@ invoiceForm initialValue =
                             Basics.identity
                    )
             )
+        |> Form.hiddenKind ( "kind", "invoice" ) "Expected kind"
 
 
 deleteInvoiceForm : Form.HtmlForm String () data msg
@@ -129,3 +130,4 @@ deleteInvoiceForm =
     , view = \_ -> []
     }
         |> Form.form
+        |> Form.hiddenKind ( "kind", "deleteInvoice" ) "Expected kind"

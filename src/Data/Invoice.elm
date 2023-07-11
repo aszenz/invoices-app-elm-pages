@@ -10,8 +10,17 @@ import Json.Encode
 import Search.Query
 
 
-type alias Invoice =
+type alias NewInvoice =
     { number : String
+    , company : String
+    , date : Date.Date
+    , items : List InvoiceItem
+    }
+
+
+type alias ExistingInvoice =
+    { id : String
+    , number : String
     , company : String
     , date : Date.Date
     , items : List InvoiceItem
@@ -25,16 +34,18 @@ type alias InvoiceItem =
     }
 
 
-invoiceDecoder : Json.Decode.Decoder Invoice
+invoiceDecoder : Json.Decode.Decoder ExistingInvoice
 invoiceDecoder =
-    Json.Decode.map4
-        (\number company date items ->
-            { number = number
+    Json.Decode.map5
+        (\id number company date items ->
+            { id = id
+            , number = number
             , company = company
             , items = items
             , date = date
             }
         )
+        (Json.Decode.field "id" Json.Decode.int |> Json.Decode.map String.fromInt)
         (Json.Decode.field "number" Json.Decode.string)
         (Json.Decode.field "company" Json.Decode.string)
         (Json.Decode.field "date" BackendTask.Custom.dateDecoder)
@@ -57,7 +68,7 @@ invoiceDecoder =
 
 getInvoices :
     Dict.Dict String (List String)
-    -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } (List Invoice)
+    -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } (List ExistingInvoice)
 getInvoices filters =
     let
         _ =
@@ -72,14 +83,14 @@ getInvoices filters =
         (Json.Decode.list invoiceDecoder)
 
 
-getInvoice : String -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } (Maybe Invoice)
-getInvoice invoiceNumber =
+getInvoice : String -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } (Maybe ExistingInvoice)
+getInvoice id =
     BackendTask.Custom.run "getInvoice"
-        (Json.Encode.object [ ( "invoiceNumber", invoiceNumber |> Json.Encode.string ) ])
+        (Json.Encode.object [ ( "id", id |> Json.Encode.string ) ])
         (Json.Decode.nullable invoiceDecoder)
 
 
-createInvoice : Invoice -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } Invoice
+createInvoice : NewInvoice -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } ExistingInvoice
 createInvoice invoice =
     BackendTask.Custom.run "createInvoice"
         (Json.Encode.object
@@ -93,20 +104,21 @@ createInvoice invoice =
 
 
 deleteInvoice : String -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } ()
-deleteInvoice number =
+deleteInvoice id =
     BackendTask.Custom.run "deleteInvoice"
-        (Json.Encode.object [ ( "invoiceNumber", number |> Json.Encode.string ) ])
+        (Json.Encode.object [ ( "id", id |> Json.Encode.string ) ])
         (Json.Decode.succeed ())
 
 
-updateInvoice : Invoice -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } Invoice
+updateInvoice : ExistingInvoice -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } ExistingInvoice
 updateInvoice invoice =
     BackendTask.Custom.run "updateInvoice"
         (Json.Encode.object
-            [ ( "invoiceNumber", invoice.number |> Json.Encode.string )
+            [ ( "id", invoice.id |> Json.Encode.string )
             , ( "newData"
               , Json.Encode.object
-                    [ ( "company", invoice.company |> Json.Encode.string )
+                    [ ( "number", invoice.number |> Json.Encode.string )
+                    , ( "company", invoice.company |> Json.Encode.string )
                     , ( "date", invoice.date |> Date.toIsoString |> Json.Encode.string )
                     ]
               )

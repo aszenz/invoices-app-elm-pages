@@ -2,7 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["linux-nixos"]
 }
 
@@ -12,11 +12,11 @@ datasource db {
 }
 
 model Invoice {
-  id    Int     @id @default(autoincrement())
-  number String  @unique
-  company  String
-  date DateTime
-  items InvoiceItems[]
+  id      Int            @id @default(autoincrement())
+  number  String         @unique
+  company String
+  date    DateTime
+  items   InvoiceItems[]
 }
 
 model InvoiceItems {
@@ -24,6 +24,6 @@ model InvoiceItems {
   product   String
   quantity  Float
   price     Float
-  invoice    Invoice @relation(fields: [invoiceId], references: [id])
-  invoiceId  Int
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+  invoiceId Int
 }

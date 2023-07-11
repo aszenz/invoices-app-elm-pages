@@ -47,11 +47,11 @@ type alias RouteParams =
 
 
 type alias Data =
-    Data.Invoice.Invoice
+    Data.Invoice.ExistingInvoice
 
 
 type Action
-    = SaveInvoice (BackendTask.BackendTask FatalError.FatalError (Form.Validation.Validation String Data.Invoice.Invoice Never Never))
+    = SaveInvoice (BackendTask.BackendTask FatalError.FatalError (Form.Validation.Validation String Data.Invoice.NewInvoice Never Never))
     | DeleteInvoice ()
 
 
@@ -101,7 +101,13 @@ action routeParams request =
                                         (\output ->
                                             case Form.Validation.value output of
                                                 Just inv ->
-                                                    Data.Invoice.updateInvoice { inv | number = routeParams.id }
+                                                    Data.Invoice.updateInvoice
+                                                        { id = routeParams.id
+                                                        , number = inv.number
+                                                        , company = inv.company
+                                                        , date = inv.date
+                                                        , items = []
+                                                        }
                                                         |> BackendTask.allowFatal
                                                         |> BackendTask.map
                                                             (\_ -> Route.redirectTo (Route.Invoices__Id_ { id = routeParams.id }))
@@ -197,7 +203,7 @@ view app _ =
     }
 
 
-formHandlers : Maybe Data.Invoice.Invoice -> Form.Handler.Handler String Action
+formHandlers : Maybe Data.Invoice.ExistingInvoice -> Form.Handler.Handler String Action
 formHandlers initialFormValue =
     Form.Handler.init SaveInvoice (Form.Invoice.invoiceForm initialFormValue)
         |> Form.Handler.with DeleteInvoice Form.Invoice.deleteInvoiceForm
