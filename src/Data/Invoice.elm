@@ -10,7 +10,7 @@ import Json.Encode
 import Search.Query
 
 
-type alias NewInvoice =
+type alias FormInvoice =
     { number : String
     , company : String
     , date : Date.Date
@@ -18,7 +18,7 @@ type alias NewInvoice =
     }
 
 
-type alias ExistingInvoice =
+type alias SavedInvoice =
     { id : String
     , number : String
     , company : String
@@ -34,7 +34,7 @@ type alias InvoiceItem =
     }
 
 
-invoiceDecoder : Json.Decode.Decoder ExistingInvoice
+invoiceDecoder : Json.Decode.Decoder SavedInvoice
 invoiceDecoder =
     Json.Decode.map5
         (\id number company date items ->
@@ -68,7 +68,7 @@ invoiceDecoder =
 
 getInvoices :
     Dict.Dict String (List String)
-    -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } (List ExistingInvoice)
+    -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } (List SavedInvoice)
 getInvoices filters =
     let
         _ =
@@ -83,14 +83,14 @@ getInvoices filters =
         (Json.Decode.list invoiceDecoder)
 
 
-getInvoice : String -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } (Maybe ExistingInvoice)
+getInvoice : String -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } (Maybe SavedInvoice)
 getInvoice id =
     BackendTask.Custom.run "getInvoice"
         (Json.Encode.object [ ( "id", id |> Json.Encode.string ) ])
         (Json.Decode.nullable invoiceDecoder)
 
 
-createInvoice : NewInvoice -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } ExistingInvoice
+createInvoice : FormInvoice -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } SavedInvoice
 createInvoice invoice =
     BackendTask.Custom.run "createInvoice"
         (Json.Encode.object
@@ -110,7 +110,7 @@ deleteInvoice id =
         (Json.Decode.succeed ())
 
 
-updateInvoice : ExistingInvoice -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } ExistingInvoice
+updateInvoice : SavedInvoice -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } SavedInvoice
 updateInvoice invoice =
     BackendTask.Custom.run "updateInvoice"
         (Json.Encode.object

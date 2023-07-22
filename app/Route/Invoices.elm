@@ -37,7 +37,7 @@ type alias RouteParams =
 
 
 type alias Data =
-    { invoices : List Data.Invoice.ExistingInvoice }
+    { invoices : List Data.Invoice.SavedInvoice }
 
 
 type alias ActionData =

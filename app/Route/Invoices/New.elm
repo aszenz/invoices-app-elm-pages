@@ -89,7 +89,7 @@ action _ request =
 formHandlers :
     Form.Handler.Handler
         String
-        (BackendTask.BackendTask FatalError.FatalError (Form.Validation.Validation String Data.Invoice.NewInvoice Never Never))
+        (BackendTask.BackendTask FatalError.FatalError (Form.Validation.Validation String Data.Invoice.FormInvoice Never Never))
 formHandlers =
     Form.Invoice.invoiceForm Nothing
         |> Form.Handler.init Basics.identity
@@ -118,7 +118,7 @@ view app _ =
         , case app.action of
             Nothing ->
                 Form.Invoice.invoiceForm Nothing
-                    |> Pages.Form.renderHtml [] (Form.options "invoice") app
+                    |> Pages.Form.renderHtml [] (Form.options "invoice" |> Form.withInput Nothing) app
 
             Just { serverFormResponse } ->
                 Html.div []
@@ -127,8 +127,9 @@ view app _ =
                         ]
                     , Form.Invoice.invoiceForm Nothing
                         |> Pages.Form.renderHtml []
-                            (Form.options "invoice"
+                            (Form.options "new-invoice"
                                 |> Form.withServerResponse (Just serverFormResponse)
+                                |> Form.withInput Nothing
                             )
                             app
                     ]

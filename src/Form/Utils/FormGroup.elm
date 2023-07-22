@@ -1,4 +1,4 @@
-module Form.Utils.FormGroup exposing (errorsView, fieldView, hasFormError)
+module Form.Utils.FormGroup exposing (errorsView, fieldView, hasFormError, isFormSubmitting)
 
 import Dict
 import Form
@@ -6,6 +6,9 @@ import Form.FieldView
 import Form.Validation
 import Html
 import Html.Attributes
+import Pages.ConcurrentSubmission
+import Pages.Navigation
+import RouteBuilder
 
 
 fieldView :
@@ -51,3 +54,38 @@ hasFormError { serverSideErrors, persisted } =
            )
     )
         |> Basics.not
+
+
+isFormSubmitting :
+    String
+    -> RouteBuilder.App data actionData routeParams
+    -> Bool
+isFormSubmitting formId app =
+    (case app.concurrentSubmissions |> Dict.get formId of
+        Just { status } ->
+            case status of
+                Pages.ConcurrentSubmission.Complete _ ->
+                    False
+
+                Pages.ConcurrentSubmission.Submitting ->
+                    True
+
+                Pages.ConcurrentSubmission.Reloading _ ->
+                    True
+
+        Nothing ->
+            False
+    )
+        || (case app.navigation of
+                Just (Pages.Navigation.Submitting formData) ->
+                    formData.id == Just formId
+
+                Just (Pages.Navigation.LoadAfterSubmit submitData _ _) ->
+                    submitData.id == Just formId
+
+                Just (Pages.Navigation.Loading _ _) ->
+                    False
+
+                Nothing ->
+                    False
+           )

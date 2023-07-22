@@ -11,12 +11,12 @@ import Pages.Form
 
 
 invoiceForm :
-    Maybe Data.Invoice.ExistingInvoice
+    Maybe Data.Invoice.SavedInvoice
     ->
         Pages.Form.FormWithServerValidations
             String
-            Data.Invoice.NewInvoice
-            ()
+            Data.Invoice.FormInvoice
+            (Maybe Data.Invoice.SavedInvoice)
             (List (Html.Html msg))
 invoiceForm initialValue =
     (\number company date ->
@@ -91,35 +91,17 @@ invoiceForm initialValue =
         |> Form.field "number"
             (Form.Field.text
                 |> Form.Field.required "Required"
-                |> (case initialValue of
-                        Just i ->
-                            Form.Field.withInitialValue (i.number |> Basics.always)
-
-                        Nothing ->
-                            Basics.identity
-                   )
+                |> Form.Field.withOptionalInitialValue (\i -> Maybe.map .number i)
             )
         |> Form.field "company"
             (Form.Field.text
                 |> Form.Field.required "Required"
-                |> (case initialValue of
-                        Just i ->
-                            Form.Field.withInitialValue (i.company |> Basics.always)
-
-                        Nothing ->
-                            Basics.identity
-                   )
+                |> Form.Field.withOptionalInitialValue (\i -> Maybe.map .company i)
             )
         |> Form.field "date"
             (Form.Field.date { invalid = \_ -> "Bad value" }
                 |> Form.Field.required "Required"
-                |> (case initialValue of
-                        Just i ->
-                            Form.Field.withInitialValue (i.date |> Basics.always)
-
-                        Nothing ->
-                            Basics.identity
-                   )
+                |> Form.Field.withOptionalInitialValue (\i -> Maybe.map .date i)
             )
         |> Form.hiddenKind ( "kind", "invoice" ) "Expected kind"
 

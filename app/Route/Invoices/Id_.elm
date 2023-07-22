@@ -9,18 +9,17 @@ module Route.Invoices.Id_ exposing
 
 import BackendTask
 import Data.Invoice
-import Dict
 import ErrorPage
 import FatalError
 import Form
 import Form.Handler
 import Form.Invoice
+import Form.Utils.FormGroup
 import Form.Validation
 import Head
 import Html
 import Html.Attributes
 import Pages.Form
-import Pages.Navigation
 import PagesMsg
 import Route
 import RouteBuilder
@@ -47,11 +46,11 @@ type alias RouteParams =
 
 
 type alias Data =
-    Data.Invoice.ExistingInvoice
+    Data.Invoice.SavedInvoice
 
 
 type Action
-    = SaveInvoice (BackendTask.BackendTask FatalError.FatalError (Form.Validation.Validation String Data.Invoice.NewInvoice Never Never))
+    = SaveInvoice (BackendTask.BackendTask FatalError.FatalError (Form.Validation.Validation String Data.Invoice.FormInvoice Never Never))
     | DeleteInvoice ()
 
 
@@ -65,10 +64,6 @@ data :
     -> Server.Request.Request
     -> BackendTask.BackendTask FatalError.FatalError (Server.Response.Response Data ErrorPage.ErrorPage)
 data routeParams _ =
-    let
-        _ =
-            Debug.log "CALLED DATA" ""
-    in
     Data.Invoice.getInvoice routeParams.id
         |> BackendTask.allowFatal
         |> BackendTask.map
@@ -143,38 +138,29 @@ view :
     -> View.View (PagesMsg.PagesMsg Msg)
 view app _ =
     let
-        _ =
-            Debug.log "data" app.data
+        updateInvoiceFormId =
+            "update-invoice-" ++ app.data.id
 
-        _ =
-            Debug.log "action" app.action
+        deleteInvoiceFormId =
+            "delete-invoice-" ++ app.data.id
     in
     { title = "Invoice " ++ app.data.number
     , body =
         [ Html.h2 []
             [ Html.text ("Invoice " ++ app.data.number)
+            , Html.text (", Company " ++ app.data.company)
             ]
         , Html.nav []
-            [ case app.navigation of
-                Just (Pages.Navigation.Submitting _) ->
-                    Html.button
-                        [ Html.Attributes.disabled True ]
-                        [ Html.text "Saving invoice..." ]
-
-                _ ->
-                    Html.button [ Html.Attributes.type_ "submit", Html.Attributes.form "invoice" ] [ Html.text "Save" ]
-            , if
-                app.pageFormState
-                    |> Dict.get "deleteInvoice"
-                    |> Maybe.map .submitAttempted
-                    |> Maybe.withDefault False
-              then
-                Html.button
-                    [ Html.Attributes.disabled True ]
-                    [ Html.text "Deleting invoice..." ]
+            [ if Form.Utils.FormGroup.isFormSubmitting updateInvoiceFormId app then
+                Html.button [ Html.Attributes.disabled True ] [ Html.text "Saving invoice..." ]
 
               else
-                Html.button [ Html.Attributes.type_ "submit", Html.Attributes.form "deleteInvoice" ] [ Html.text "Delete" ]
+                Html.button [ Html.Attributes.type_ "submit", Html.Attributes.form updateInvoiceFormId ] [ Html.text "Save" ]
+            , if Form.Utils.FormGroup.isFormSubmitting deleteInvoiceFormId app then
+                Html.button [ Html.Attributes.disabled True ] [ Html.text "Deleting invoice..." ]
+
+              else
+                Html.button [ Html.Attributes.type_ "submit", Html.Attributes.form deleteInvoiceFormId ] [ Html.text "Delete" ]
             ]
         , case app.action of
             Nothing ->
@@ -182,28 +168,31 @@ view app _ =
                     [ app.data
                         |> Just
                         |> Form.Invoice.invoiceForm
-                        |> Pages.Form.renderHtml [] (Form.options "invoice") app
+                        |> Pages.Form.renderHtml [] (Form.options updateInvoiceFormId |> Form.withInput (Just app.data)) app
                     , Form.Invoice.deleteInvoiceForm
-                        |> Pages.Form.renderHtml [] (Form.options "deleteInvoice") app
+                        |> Pages.Form.renderHtml [] (Form.options deleteInvoiceFormId) app
                     ]
 
-            Just { serverFormResponse } ->
+            Just _ ->
                 Html.div []
                     [ Html.span []
                         [ Html.text "Failed to save"
                         ]
-                    , Form.Invoice.invoiceForm Nothing
+                    , Form.Invoice.invoiceForm (Just app.data)
                         |> Pages.Form.renderHtml []
-                            (Form.options "invoice" |> Form.withServerResponse (Just serverFormResponse))
+                            (Form.options updateInvoiceFormId
+                                -- |> Form.withServerResponse (Just serverFormResponse)
+                                |> Form.withInput (Just app.data)
+                            )
                             app
                     , Form.Invoice.deleteInvoiceForm
-                        |> Pages.Form.renderHtml [] (Form.options "deleteInvoice") app
+                        |> Pages.Form.renderHtml [] (Form.options deleteInvoiceFormId) app
                     ]
         ]
     }
 
 
-formHandlers : Maybe Data.Invoice.ExistingInvoice -> Form.Handler.Handler String Action
+formHandlers : Maybe Data.Invoice.SavedInvoice -> Form.Handler.Handler String Action
 formHandlers initialFormValue =
     Form.Handler.init SaveInvoice (Form.Invoice.invoiceForm initialFormValue)
         |> Form.Handler.with DeleteInvoice Form.Invoice.deleteInvoiceForm
