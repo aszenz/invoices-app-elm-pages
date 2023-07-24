@@ -11,9 +11,15 @@ export {
 
 const prisma = new PrismaClient();
 
-async function getInvoices(search: any) {
+async function getInvoices(search: Record<string, string>) {
+  console.log("search input", search);
   const invoices = await prisma.invoice.findMany({
     include: { items: true },
+    where: {
+      company: { contains: search.company },
+      number: { contains: search.number },
+      // date: { equals: search.date },
+    },
   });
   return invoices;
 }
@@ -76,7 +82,7 @@ async function createInvoice(data: {
 }
 
 async function deleteInvoice({ id }: { id: string }) {
-  console.log('invoice', id)
+  console.log("invoice", id);
   const _ = await prisma.invoice.delete({
     where: {
       id: Number(id),

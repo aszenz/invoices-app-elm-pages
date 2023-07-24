@@ -1,9 +1,10 @@
-module Form.Invoice exposing (deleteInvoiceForm, invoiceForm)
+module Form.Invoice exposing (deleteInvoiceForm, invoiceForm, searchInvoicesForm)
 
 import BackendTask
 import Data.Invoice
 import Form
 import Form.Field
+import Form.FieldView
 import Form.Utils.FormGroup
 import Form.Validation
 import Html
@@ -113,3 +114,40 @@ deleteInvoiceForm =
     }
         |> Form.form
         |> Form.hiddenKind ( "kind", "deleteInvoice" ) "Expected kind"
+
+
+searchInvoicesForm viewWrapper =
+    (\number company date ->
+        { combine =
+            Form.Validation.succeed
+                (\numberVal companyVal dateVal ->
+                    { number = numberVal
+                    , company = companyVal
+                    , date = dateVal
+                    }
+                )
+                |> Form.Validation.andMap number
+                |> Form.Validation.andMap company
+                |> Form.Validation.andMap date
+        , view =
+            \formState ->
+                viewWrapper
+                    [ Html.div []
+                        [ Html.text "Number"
+                        , Form.FieldView.input [] number
+                        ]
+                    , Html.div []
+                        [ Html.text "Company"
+                        , Form.FieldView.input [] company
+                        ]
+                    , Html.div []
+                        [ Html.text "Date"
+                        , Form.FieldView.input [] date
+                        ]
+                    ]
+        }
+    )
+        |> Form.form
+        |> Form.field "number" Form.Field.text
+        |> Form.field "company" Form.Field.text
+        |> Form.field "date" (Form.Field.date { invalid = \_ -> "Bad value" })

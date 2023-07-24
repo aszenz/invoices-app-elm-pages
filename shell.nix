@@ -48,7 +48,7 @@ in
 {
   inherit pkgs;
   shell = pkgs.mkShell {
-    name = "elmLearn";
+    name = "elm pages invoices app";
     buildInputs = [
       lamdera
       pkgs.nodejs_20

@@ -12,9 +12,12 @@ import Data.Invoice
 import Date
 import ErrorPage
 import FatalError
+import Form
+import Form.Invoice
 import Head
 import Html
 import Html.Attributes
+import Pages.Form
 import PagesMsg
 import Route
 import RouteBuilder
@@ -90,79 +93,50 @@ view :
     -> Shared.Model
     -> View.View (PagesMsg.PagesMsg ())
 view app _ =
+    let
+        searchForm viewWrap =
+            Pages.Form.renderHtml []
+                (Form.options "searchInvoices"
+                    |> Form.withGetMethod
+                )
+                app
+                (Form.Invoice.searchInvoicesForm viewWrap)
+    in
     { title = "Invoices"
     , body =
         [ Html.h2 []
             [ Html.text "Invoices"
             ]
-        , Html.form [ Html.Attributes.method "GET", Html.Attributes.id "search-invoices-form" ]
-            [ Html.button [ Html.Attributes.type_ "submit" ] [ Html.text "Search" ]
+        , Html.nav []
+            [ Html.button [ Html.Attributes.type_ "submit", Html.Attributes.form "searchInvoices" ] [ Html.text "Search" ]
             ]
-        , Html.table []
-            [ Html.thead []
-                [ Html.tr []
-                    [ Html.th []
-                        [ Html.div []
-                            [ Html.text "Number"
-                            , Html.input
-                                [ Html.Attributes.name "number"
-                                , Html.Attributes.type_ "text"
-                                , Html.Attributes.form "search-invoices-form"
-                                ]
-                                []
-                            ]
+        , searchForm
+            (\inputs ->
+                [ Html.table []
+                    [ Html.thead []
+                        [ Html.tr []
+                            (inputs
+                                |> List.map (\input -> Html.th [] [ input ])
+                            )
                         ]
-                    , Html.th []
-                        [ Html.div []
-                            [ Html.text "Company"
-                            , Html.input
-                                [ Html.Attributes.name "company"
-                                , Html.Attributes.type_ "text"
-                                , Html.Attributes.form "search-invoices-form"
-                                ]
-                                []
-                            ]
-                        ]
-                    , Html.th []
-                        [ Html.div []
-                            [ Html.text "Date"
-                            , Html.input
-                                [ Html.Attributes.name "date"
-                                , Html.Attributes.type_ "text"
-                                , Html.Attributes.form "search-invoices-form"
-                                ]
-                                []
-                            ]
-                        ]
-                    , Html.th []
-                        [ Html.div []
-                            [ Html.text "Item count"
-                            , Html.input
-                                [ Html.Attributes.name "item_count"
-                                , Html.Attributes.type_ "text"
-                                , Html.Attributes.form "search-invoices-form"
-                                ]
-                                []
-                            ]
-                        ]
+                    , app.data.invoices
+                        |> List.map
+                            (\invoice ->
+                                Html.tr []
+                                    [ Html.td []
+                                        [ Route.Invoices__Id_ { id = invoice.id }
+                                            |> Route.link []
+                                                [ Html.text invoice.number
+                                                ]
+                                        ]
+                                    , Html.td [] [ Html.text invoice.company ]
+                                    , Html.td [] [ invoice.date |> Date.format "d-MM-Y" |> Html.text ]
+                                    , Html.td [] [ List.length invoice.items |> String.fromInt |> Html.text ]
+                                    ]
+                            )
+                        |> Html.tbody []
                     ]
                 ]
-            , app.data.invoices
-                |> List.map
-                    (\invoice ->
-                        Html.tr []
-                            [ Html.td []
-                                [ Route.Invoices__Id_ { id = invoice.id }
-                                    |> Route.link []
-                                        [ Html.text invoice.number
-                                        ]
-                                ]
-                            , Html.td [] [ Html.text invoice.company ]
-                            , Html.td [] [ invoice.date |> Date.format "d-MM-Y" |> Html.text ]
-                            , Html.td [] [ List.length invoice.items |> String.fromInt |> Html.text ]
-                            ]
-                    )
-                |> Html.tbody []
-            ]
+            )
         ]
     }
