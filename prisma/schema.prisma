@@ -3,7 +3,7 @@
 
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["linux-nixos"]
+  binaryTargets = ["native"]
 }
 
 datasource db {
