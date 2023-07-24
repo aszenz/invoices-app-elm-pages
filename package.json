@@ -17,6 +17,6 @@
   },
   "dependencies": {
     "@netlify/functions": "^1.4.0",
-    "@prisma/client": "^4.15.0"
+    "@prisma/client": "^5.0.0"
   }
 }

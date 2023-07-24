@@ -1,6 +1,6 @@
 let
   # commit revison of nixpkgs repository
-  nixpkgsRev = "23.05";
+  nixpkgsRev = "nixos-unstable";
 
   # a nix function to fetch a tar ball from github
   githubTarball = owner: repo: rev:
@@ -53,15 +53,12 @@ in
       lamdera
       pkgs.nodejs_20
       pkgs.openssl
+      pkgs.nodePackages_latest.prisma
+      pkgs.elmPackages.elm-json
     ];
     shellHook = ''
       echo "elm pages starter"
       PATH="$PWD/node_modules/.bin:$PATH"
     '';
-    PRISMA_MIGRATION_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/migration-engine";
-    PRISMA_QUERY_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/query-engine";
-    PRISMA_QUERY_ENGINE_LIBRARY = "${pkgs.prisma-engines}/lib/libquery_engine.node";
-    PRISMA_INTROSPECTION_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/introspection-engine";
-    PRISMA_FMT_BINARY = "${pkgs.prisma-engines}/bin/prisma-fmt";
   };
 }
