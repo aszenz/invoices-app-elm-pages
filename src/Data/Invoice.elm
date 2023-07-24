@@ -70,10 +70,6 @@ getInvoices :
     Dict.Dict String (List String)
     -> BackendTask.BackendTask { fatal : FatalError.FatalError, recoverable : BackendTask.Custom.Error } (List SavedInvoice)
 getInvoices filters =
-    let
-        _ =
-            Debug.log "filters" filters
-    in
     BackendTask.Custom.run "getInvoices"
         (filters
             |> Search.Query.fromQueryParams
