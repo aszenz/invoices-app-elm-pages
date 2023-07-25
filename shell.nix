@@ -54,11 +54,9 @@ in
       pkgs.nodejs_20
       pkgs.openssl
       pkgs.nodePackages_latest.prisma
-      pkgs.elmPackages.elm-json
     ];
     shellHook = ''
       echo "elm pages starter"
-      PATH="$PWD/node_modules/.bin:$PATH"
     '';
     PRISMA_MIGRATION_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/migration-engine";
     PRISMA_QUERY_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/query-engine";

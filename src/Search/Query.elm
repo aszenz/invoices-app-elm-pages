@@ -77,7 +77,7 @@ fromQueryParams toFieldName queryParams =
     }
 
 
-toQueryParams : (fieldType -> String) -> SearchConditions fieldType -> Dict.Dict String (String)
+toQueryParams : (fieldType -> String) -> SearchConditions fieldType -> Dict.Dict String String
 toQueryParams fieldTypeToString searchConditions =
     let
         filters =
@@ -111,7 +111,7 @@ encodeToJSValue fieldTypeToString searchConditions =
     toQueryParams fieldTypeToString searchConditions
         |> Json.Encode.dict
             Basics.identity
-            (Json.Encode.string)
+            Json.Encode.string
 
 
 fromSortOrderList : List String -> SortOrder

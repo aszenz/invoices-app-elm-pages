@@ -4,8 +4,8 @@ module View exposing (View, map)
 
 @docs View, map
 
-
 -}
+
 import Html exposing (Html)
 
 
